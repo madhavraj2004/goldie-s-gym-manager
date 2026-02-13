@@ -1,0 +1,13 @@
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Card, CardContent } from "@/components/ui/card";
+
+const Notifications = () => (
+  <DashboardLayout>
+    <div className="space-y-6">
+      <h1 className="font-display text-3xl font-bold">Notifications</h1>
+      <Card><CardContent className="pt-6 text-center text-muted-foreground">Notifications coming soon.</CardContent></Card>
+    </div>
+  </DashboardLayout>
+);
+
+export default Notifications;
