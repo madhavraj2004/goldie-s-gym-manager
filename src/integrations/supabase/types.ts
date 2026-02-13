@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      member_profiles: {
+        Row: {
+          assigned_trainer_id: string | null
+          created_at: string
+          date_of_birth: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
+          fitness_goal: string | null
+          gender: string | null
+          height_cm: number | null
+          id: string
+          medical_notes: string | null
+          membership_end: string | null
+          membership_start: string | null
+          membership_status: string
+          updated_at: string
+          user_id: string
+          weight_kg: number | null
+        }
+        Insert: {
+          assigned_trainer_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          fitness_goal?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          medical_notes?: string | null
+          membership_end?: string | null
+          membership_start?: string | null
+          membership_status?: string
+          updated_at?: string
+          user_id: string
+          weight_kg?: number | null
+        }
+        Update: {
+          assigned_trainer_id?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          fitness_goal?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          medical_notes?: string | null
+          membership_end?: string | null
+          membership_start?: string | null
+          membership_status?: string
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -39,6 +96,39 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trainer_profiles: {
+        Row: {
+          bio: string | null
+          certifications: string[] | null
+          created_at: string
+          experience_years: number | null
+          id: string
+          specialization: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          specialization?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          certifications?: string[] | null
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          specialization?: string | null
           updated_at?: string
           user_id?: string
         }
