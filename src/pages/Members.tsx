@@ -216,7 +216,7 @@ function CreateMemberDialog({
       ...form,
       weight_kg: form.weight_kg ? Number(form.weight_kg) : undefined,
       height_cm: form.height_cm ? Number(form.height_cm) : undefined,
-      assigned_trainer_id: form.assigned_trainer_id || undefined,
+      assigned_trainer_id: form.assigned_trainer_id && form.assigned_trainer_id !== "none" ? form.assigned_trainer_id : undefined,
     });
     setForm({
       email: "", password: "", full_name: "", phone: "",
@@ -287,7 +287,7 @@ function CreateMemberDialog({
               <Select value={form.assigned_trainer_id} onValueChange={(v) => set("assigned_trainer_id", v)}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {trainers.map((t) => (
                     <SelectItem key={t.user_id} value={t.user_id}>{t.full_name || "Unnamed"}</SelectItem>
                   ))}
@@ -365,7 +365,7 @@ function EditMemberDialog({
       emergency_phone: form.emergency_phone || null,
       fitness_goal: form.fitness_goal || null,
       medical_notes: form.medical_notes || null,
-      assigned_trainer_id: form.assigned_trainer_id || null,
+      assigned_trainer_id: form.assigned_trainer_id && form.assigned_trainer_id !== "none" ? form.assigned_trainer_id : null,
       membership_status: form.membership_status,
       membership_start: form.membership_start || null,
       membership_end: form.membership_end || null,
@@ -412,7 +412,7 @@ function EditMemberDialog({
               <Select value={form.assigned_trainer_id} onValueChange={(v) => set("assigned_trainer_id", v)}>
                 <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {trainers.map((t) => (
                     <SelectItem key={t.user_id} value={t.user_id}>{t.full_name || "Unnamed"}</SelectItem>
                   ))}
