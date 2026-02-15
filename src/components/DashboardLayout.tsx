@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import gymLogo from "@/assets/goldie-gym-logo.png";
 
 const adminLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -67,7 +68,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       )}>
         <div className="p-6 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <Dumbbell className="h-8 w-8 text-primary" />
+            <img src={gymLogo} alt="Goldie's Gym" className="h-10 w-auto" />
             <div>
               <h1 className="font-display text-lg font-bold text-primary tracking-wider">GOLDIE'S GYM</h1>
               <p className="text-xs text-muted-foreground capitalize">{role} Panel</p>
