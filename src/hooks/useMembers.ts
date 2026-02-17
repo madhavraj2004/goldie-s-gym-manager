@@ -34,10 +34,7 @@ export function useMembers(search?: string, statusFilter?: string) {
     queryFn: async () => {
       let query = supabase
         .from("member_profiles")
-        .select(`
-          *,
-          profiles!member_profiles_user_id_fkey(full_name, phone, avatar_url)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (statusFilter && statusFilter !== "all") {
@@ -47,7 +44,19 @@ export function useMembers(search?: string, statusFilter?: string) {
       const { data, error } = await query;
       if (error) throw error;
 
-      let results = (data as unknown as MemberWithProfile[]) || [];
+      if (!data?.length) return [];
+
+      // Fetch profiles separately since there's no FK
+      const userIds = data.map((m) => m.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone, avatar_url")
+        .in("user_id", userIds);
+
+      let results: MemberWithProfile[] = data.map((m) => ({
+        ...m,
+        profiles: profiles?.find((p) => p.user_id === m.user_id) || null,
+      }));
 
       if (search) {
         const s = search.toLowerCase();

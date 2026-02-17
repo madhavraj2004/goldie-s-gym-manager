@@ -14,7 +14,7 @@ const adminLinks = [
   { to: "/members", label: "Members", icon: Users },
   { to: "/trainers", label: "Trainers", icon: Dumbbell },
   { to: "/plans", label: "Plans", icon: CreditCard },
-  { to: "/payments", label: "Payments", icon: CreditCard },
+  { to: "/payments", label: "Payments", icon: CreditCard, },
   { to: "/attendance", label: "Attendance", icon: CalendarCheck },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/messages", label: "Messages", icon: MessageSquare },
@@ -35,6 +35,7 @@ const trainerLinks = [
 const memberLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/attendance", label: "Attendance", icon: CalendarCheck },
+  { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/milestones", label: "Progress", icon: Trophy },
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Notifications", icon: Bell },

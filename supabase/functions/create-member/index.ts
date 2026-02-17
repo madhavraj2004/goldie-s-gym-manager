@@ -58,11 +58,22 @@ serve(async (req) => {
       await supabaseAdmin.from("profiles").update({ phone }).eq("user_id", userId);
     }
 
-    // Create member profile
-    await supabaseAdmin.from("member_profiles").insert({
-      user_id: userId,
-      ...memberData,
-    });
+    // Update member profile (trigger already creates it, so we upsert extra fields)
+    const { weight_kg, height_cm, date_of_birth, gender, emergency_contact, emergency_phone, fitness_goal, medical_notes, assigned_trainer_id } = memberData;
+    const updates: Record<string, any> = {};
+    if (weight_kg !== undefined) updates.weight_kg = weight_kg;
+    if (height_cm !== undefined) updates.height_cm = height_cm;
+    if (date_of_birth) updates.date_of_birth = date_of_birth;
+    if (gender) updates.gender = gender;
+    if (emergency_contact) updates.emergency_contact = emergency_contact;
+    if (emergency_phone) updates.emergency_phone = emergency_phone;
+    if (fitness_goal) updates.fitness_goal = fitness_goal;
+    if (medical_notes) updates.medical_notes = medical_notes;
+    if (assigned_trainer_id) updates.assigned_trainer_id = assigned_trainer_id;
+
+    if (Object.keys(updates).length > 0) {
+      await supabaseAdmin.from("member_profiles").update(updates).eq("user_id", userId);
+    }
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
