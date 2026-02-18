@@ -1,9 +1,22 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Dumbbell, CreditCard, CalendarCheck, Trophy, TrendingUp, Activity, Target } from "lucide-react";
+import { Users, Dumbbell, CreditCard, CalendarCheck, Trophy, TrendingUp, Activity, Target, IndianRupee } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, Legend
+} from "recharts";
+import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+
+const CHART_COLORS = [
+  "hsl(43, 96%, 56%)", // primary/gold
+  "hsl(0, 84%, 60%)",  // destructive/red
+  "hsl(200, 70%, 50%)", // blue
+  "hsl(150, 60%, 45%)", // green
+  "hsl(280, 60%, 55%)", // purple
+];
 
 const Dashboard = () => {
   const { role, user } = useAuth();
@@ -57,17 +70,91 @@ function AdminDashboard() {
     },
   });
 
+  // Attendance trend (last 7 days)
+  const { data: attendanceTrend } = useQuery({
+    queryKey: ["admin-attendance-trend"],
+    queryFn: async () => {
+      const sevenDaysAgo = subDays(new Date(), 6);
+      const { data } = await supabase
+        .from("attendance")
+        .select("check_in")
+        .gte("check_in", startOfDay(sevenDaysAgo).toISOString());
+
+      const days = eachDayOfInterval({ start: sevenDaysAgo, end: new Date() });
+      return days.map((day) => {
+        const dayStr = format(day, "yyyy-MM-dd");
+        const count = data?.filter((a) => format(new Date(a.check_in), "yyyy-MM-dd") === dayStr).length || 0;
+        return { day: format(day, "EEE"), count };
+      });
+    },
+  });
+
+  // Revenue by month (last 6 months)
+  const { data: revenueTrend } = useQuery({
+    queryKey: ["admin-revenue-trend"],
+    queryFn: async () => {
+      const sixMonthsAgo = subDays(new Date(), 180);
+      const { data } = await supabase
+        .from("payments")
+        .select("amount, payment_date, status")
+        .gte("payment_date", format(sixMonthsAgo, "yyyy-MM-dd"));
+
+      const monthMap: Record<string, number> = {};
+      data?.forEach((p) => {
+        if (p.status === "paid") {
+          const month = format(new Date(p.payment_date), "MMM");
+          monthMap[month] = (monthMap[month] || 0) + Number(p.amount);
+        }
+      });
+
+      // Get last 6 months in order
+      const months: { month: string; revenue: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = subDays(new Date(), i * 30);
+        const m = format(d, "MMM");
+        if (!months.find((x) => x.month === m)) {
+          months.push({ month: m, revenue: monthMap[m] || 0 });
+        }
+      }
+      return months;
+    },
+  });
+
+  // Membership status distribution
+  const { data: membershipDist } = useQuery({
+    queryKey: ["admin-membership-dist"],
+    queryFn: async () => {
+      const { data } = await supabase.from("member_profiles").select("membership_status");
+      const counts: Record<string, number> = {};
+      data?.forEach((m) => {
+        counts[m.membership_status] = (counts[m.membership_status] || 0) + 1;
+      });
+      return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    },
+  });
+
+  // Total revenue
+  const { data: totalRevenue } = useQuery({
+    queryKey: ["admin-total-revenue"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payments").select("amount, status");
+      return data?.filter((p) => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0) || 0;
+    },
+  });
+
   const stats = [
     { title: "Total Members", value: memberCount ?? "—", icon: Users, color: "text-primary" },
     { title: "Active Members", value: activeCount ?? "—", icon: Activity, color: "text-accent" },
     { title: "Trainers", value: trainerCount ?? "—", icon: Dumbbell, color: "text-primary" },
-    { title: "This Month", value: "—", icon: CreditCard, color: "text-primary" },
+    { title: "Total Revenue", value: totalRevenue ? `₹${totalRevenue.toLocaleString()}` : "—", icon: IndianRupee, color: "text-primary" },
   ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <h1 className="font-display text-3xl font-bold">Admin Dashboard</h1>
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((s) => (
             <Card key={s.title}>
@@ -82,6 +169,110 @@ function AdminDashboard() {
           ))}
         </div>
 
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Attendance Trend */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-lg flex items-center gap-2">
+                <CalendarCheck className="h-5 w-5 text-primary" /> Attendance (Last 7 Days)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={attendanceTrend || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 20%)" />
+                    <XAxis dataKey="day" stroke="hsl(0, 0%, 55%)" fontSize={12} />
+                    <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(0, 0%, 12%)",
+                        border: "1px solid hsl(0, 0%, 20%)",
+                        borderRadius: "8px",
+                        color: "hsl(43, 30%, 90%)",
+                      }}
+                    />
+                    <Bar dataKey="count" fill="hsl(43, 96%, 56%)" radius={[4, 4, 0, 0]} name="Check-ins" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Membership Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" /> Membership Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={membershipDist || []}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={4}
+                      dataKey="value"
+                      nameKey="name"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {(membershipDist || []).map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(0, 0%, 12%)",
+                        border: "1px solid hsl(0, 0%, 20%)",
+                        borderRadius: "8px",
+                        color: "hsl(43, 30%, 90%)",
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" /> Revenue Trend (Last 6 Months)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueTrend || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 20%)" />
+                  <XAxis dataKey="month" stroke="hsl(0, 0%, 55%)" fontSize={12} />
+                  <YAxis stroke="hsl(0, 0%, 55%)" fontSize={12} tickFormatter={(v) => `₹${v}`} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(0, 0%, 12%)",
+                      border: "1px solid hsl(0, 0%, 20%)",
+                      borderRadius: "8px",
+                      color: "hsl(43, 30%, 90%)",
+                    }}
+                    formatter={(value: number) => [`₹${value.toLocaleString()}`, "Revenue"]}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(43, 96%, 56%)" strokeWidth={2} dot={{ fill: "hsl(43, 96%, 56%)" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Members */}
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-lg">Recent Members</CardTitle>
