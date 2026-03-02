@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useMembers, useTrainersForAssignment, useCreateMember, useUpdateMember, useDeleteMember, MemberWithProfile } from "@/hooks/useMembers";
+import { usePlans } from "@/hooks/usePlans";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ const Members = () => {
 
   const { data: members, isLoading } = useMembers(search, statusFilter);
   const { data: trainers } = useTrainersForAssignment();
+  const { data: plans } = usePlans();
   const createMember = useCreateMember();
   const updateMember = useUpdateMember();
   const deleteMember = useDeleteMember();
@@ -80,9 +82,9 @@ const Members = () => {
                   <TableRow>
                     <TableHead>Member</TableHead>
                     <TableHead className="hidden md:table-cell">Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Goal</TableHead>
-                    <TableHead className="hidden lg:table-cell">Trainer</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead className="hidden lg:table-cell">Plan</TableHead>
+                     <TableHead className="hidden lg:table-cell">Goal</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -105,10 +107,10 @@ const Members = () => {
                           {m.membership_status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">{m.fitness_goal || "—"}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {trainers?.find((t) => t.user_id === m.assigned_trainer_id)?.full_name || "Unassigned"}
-                      </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         {plans?.find((p) => p.id === m.plan_id)?.name || "—"}
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell">{m.fitness_goal || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => setShowDetail(m)}>
