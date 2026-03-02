@@ -202,7 +202,7 @@ function CreateMemberDialog({
   open: boolean;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
-  plans: { id: string; name: string; price: number; duration_days: number }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
   onCreate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -354,7 +354,7 @@ function EditMemberDialog({
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
-  plans: { id: string; name: string; price: number; duration_days: number }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
   onUpdate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -506,7 +506,7 @@ function MemberDetailDialog({
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
-  plans: { id: string; name: string; price: number; duration_days: number }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
 }) {
   const bmi = member.weight_kg && member.height_cm
     ? (Number(member.weight_kg) / ((Number(member.height_cm) / 100) ** 2)).toFixed(1)
