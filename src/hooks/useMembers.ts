@@ -17,6 +17,8 @@ export interface MemberWithProfile {
   membership_status: string;
   membership_start: string | null;
   membership_end: string | null;
+  plan_id: string | null;
+  created_at: string;
   created_at: string;
   profiles: {
     full_name: string | null;
@@ -144,6 +146,7 @@ export function useUpdateMember() {
       membership_status?: string;
       membership_start?: string | null;
       membership_end?: string | null;
+      plan_id?: string | null;
     }) => {
       const { error } = await supabase
         .from("member_profiles")
