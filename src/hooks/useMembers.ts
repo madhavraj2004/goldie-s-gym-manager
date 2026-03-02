@@ -19,7 +19,6 @@ export interface MemberWithProfile {
   membership_end: string | null;
   plan_id: string | null;
   created_at: string;
-  created_at: string;
   profiles: {
     full_name: string | null;
     phone: string | null;
