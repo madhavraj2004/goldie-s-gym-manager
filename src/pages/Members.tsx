@@ -302,6 +302,21 @@ function CreateMemberDialog({
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label>Membership Plan</Label>
+            <Select value={form.plan_id} onValueChange={(v) => set("plan_id", v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {plans.filter(p => p.is_active !== false).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — ₹{p.price}/{p.duration_days}d
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Emergency Contact</Label>
