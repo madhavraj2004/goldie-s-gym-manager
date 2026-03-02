@@ -197,11 +197,12 @@ const Members = () => {
 /* ---- Sub-components ---- */
 
 function CreateMemberDialog({
-  open, onClose, trainers, onCreate, isLoading
+  open, onClose, trainers, plans, onCreate, isLoading
 }: {
   open: boolean;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number }[];
   onCreate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -209,7 +210,7 @@ function CreateMemberDialog({
     email: "", password: "", full_name: "", phone: "",
     weight_kg: "", height_cm: "", date_of_birth: "", gender: "",
     emergency_contact: "", emergency_phone: "", fitness_goal: "",
-    medical_notes: "", assigned_trainer_id: "",
+    medical_notes: "", assigned_trainer_id: "", plan_id: "",
   });
 
   const set = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
@@ -221,12 +222,13 @@ function CreateMemberDialog({
       weight_kg: form.weight_kg ? Number(form.weight_kg) : undefined,
       height_cm: form.height_cm ? Number(form.height_cm) : undefined,
       assigned_trainer_id: form.assigned_trainer_id && form.assigned_trainer_id !== "none" ? form.assigned_trainer_id : undefined,
+      plan_id: form.plan_id && form.plan_id !== "none" ? form.plan_id : undefined,
     });
     setForm({
       email: "", password: "", full_name: "", phone: "",
       weight_kg: "", height_cm: "", date_of_birth: "", gender: "",
       emergency_contact: "", emergency_phone: "", fitness_goal: "",
-      medical_notes: "", assigned_trainer_id: "",
+      medical_notes: "", assigned_trainer_id: "", plan_id: "",
     });
     onClose();
   };
@@ -332,11 +334,12 @@ function CreateMemberDialog({
 }
 
 function EditMemberDialog({
-  member, onClose, trainers, onUpdate, isLoading
+  member, onClose, trainers, plans, onUpdate, isLoading
 }: {
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number }[];
   onUpdate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -353,6 +356,7 @@ function EditMemberDialog({
     membership_status: member.membership_status,
     membership_start: member.membership_start || "",
     membership_end: member.membership_end || "",
+    plan_id: member.plan_id || "",
   });
 
   const set = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
@@ -373,6 +377,7 @@ function EditMemberDialog({
       membership_status: form.membership_status,
       membership_start: form.membership_start || null,
       membership_end: form.membership_end || null,
+      plan_id: form.plan_id && form.plan_id !== "none" ? form.plan_id : null,
     });
     onClose();
   };
