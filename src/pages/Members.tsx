@@ -142,6 +142,7 @@ const Members = () => {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         trainers={trainers || []}
+        plans={plans || []}
         onCreate={createMember.mutateAsync}
         isLoading={createMember.isPending}
       />
@@ -152,6 +153,7 @@ const Members = () => {
           member={showEdit}
           onClose={() => setShowEdit(null)}
           trainers={trainers || []}
+          plans={plans || []}
           onUpdate={updateMember.mutateAsync}
           isLoading={updateMember.isPending}
         />
@@ -159,7 +161,7 @@ const Members = () => {
 
       {/* Detail Dialog */}
       {showDetail && (
-        <MemberDetailDialog member={showDetail} onClose={() => setShowDetail(null)} trainers={trainers || []} />
+        <MemberDetailDialog member={showDetail} onClose={() => setShowDetail(null)} trainers={trainers || []} plans={plans || []} />
       )}
 
       {/* Delete Confirmation */}
