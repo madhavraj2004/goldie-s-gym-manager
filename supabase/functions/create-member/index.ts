@@ -59,7 +59,7 @@ serve(async (req) => {
     }
 
     // Update member profile (trigger already creates it, so we upsert extra fields)
-    const { weight_kg, height_cm, date_of_birth, gender, emergency_contact, emergency_phone, fitness_goal, medical_notes, assigned_trainer_id } = memberData;
+    const { weight_kg, height_cm, date_of_birth, gender, emergency_contact, emergency_phone, fitness_goal, medical_notes, assigned_trainer_id, plan_id } = memberData;
     const updates: Record<string, any> = {};
     if (weight_kg !== undefined) updates.weight_kg = weight_kg;
     if (height_cm !== undefined) updates.height_cm = height_cm;
@@ -70,6 +70,7 @@ serve(async (req) => {
     if (fitness_goal) updates.fitness_goal = fitness_goal;
     if (medical_notes) updates.medical_notes = medical_notes;
     if (assigned_trainer_id) updates.assigned_trainer_id = assigned_trainer_id;
+    if (plan_id) updates.plan_id = plan_id;
 
     if (Object.keys(updates).length > 0) {
       await supabaseAdmin.from("member_profiles").update(updates).eq("user_id", userId);

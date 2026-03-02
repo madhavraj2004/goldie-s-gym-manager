@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useMembers, useTrainersForAssignment, useCreateMember, useUpdateMember, useDeleteMember, MemberWithProfile } from "@/hooks/useMembers";
+import { usePlans } from "@/hooks/usePlans";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ const Members = () => {
 
   const { data: members, isLoading } = useMembers(search, statusFilter);
   const { data: trainers } = useTrainersForAssignment();
+  const { data: plans } = usePlans();
   const createMember = useCreateMember();
   const updateMember = useUpdateMember();
   const deleteMember = useDeleteMember();
@@ -80,9 +82,9 @@ const Members = () => {
                   <TableRow>
                     <TableHead>Member</TableHead>
                     <TableHead className="hidden md:table-cell">Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Goal</TableHead>
-                    <TableHead className="hidden lg:table-cell">Trainer</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead className="hidden lg:table-cell">Plan</TableHead>
+                     <TableHead className="hidden lg:table-cell">Goal</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -105,10 +107,10 @@ const Members = () => {
                           {m.membership_status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">{m.fitness_goal || "—"}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {trainers?.find((t) => t.user_id === m.assigned_trainer_id)?.full_name || "Unassigned"}
-                      </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         {plans?.find((p) => p.id === m.plan_id)?.name || "—"}
+                       </TableCell>
+                       <TableCell className="hidden lg:table-cell">{m.fitness_goal || "—"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => setShowDetail(m)}>
@@ -140,6 +142,7 @@ const Members = () => {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         trainers={trainers || []}
+        plans={plans || []}
         onCreate={createMember.mutateAsync}
         isLoading={createMember.isPending}
       />
@@ -150,6 +153,7 @@ const Members = () => {
           member={showEdit}
           onClose={() => setShowEdit(null)}
           trainers={trainers || []}
+          plans={plans || []}
           onUpdate={updateMember.mutateAsync}
           isLoading={updateMember.isPending}
         />
@@ -157,7 +161,7 @@ const Members = () => {
 
       {/* Detail Dialog */}
       {showDetail && (
-        <MemberDetailDialog member={showDetail} onClose={() => setShowDetail(null)} trainers={trainers || []} />
+        <MemberDetailDialog member={showDetail} onClose={() => setShowDetail(null)} trainers={trainers || []} plans={plans || []} />
       )}
 
       {/* Delete Confirmation */}
@@ -193,11 +197,12 @@ const Members = () => {
 /* ---- Sub-components ---- */
 
 function CreateMemberDialog({
-  open, onClose, trainers, onCreate, isLoading
+  open, onClose, trainers, plans, onCreate, isLoading
 }: {
   open: boolean;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
   onCreate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -205,7 +210,7 @@ function CreateMemberDialog({
     email: "", password: "", full_name: "", phone: "",
     weight_kg: "", height_cm: "", date_of_birth: "", gender: "",
     emergency_contact: "", emergency_phone: "", fitness_goal: "",
-    medical_notes: "", assigned_trainer_id: "",
+    medical_notes: "", assigned_trainer_id: "", plan_id: "",
   });
 
   const set = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
@@ -217,12 +222,13 @@ function CreateMemberDialog({
       weight_kg: form.weight_kg ? Number(form.weight_kg) : undefined,
       height_cm: form.height_cm ? Number(form.height_cm) : undefined,
       assigned_trainer_id: form.assigned_trainer_id && form.assigned_trainer_id !== "none" ? form.assigned_trainer_id : undefined,
+      plan_id: form.plan_id && form.plan_id !== "none" ? form.plan_id : undefined,
     });
     setForm({
       email: "", password: "", full_name: "", phone: "",
       weight_kg: "", height_cm: "", date_of_birth: "", gender: "",
       emergency_contact: "", emergency_phone: "", fitness_goal: "",
-      medical_notes: "", assigned_trainer_id: "",
+      medical_notes: "", assigned_trainer_id: "", plan_id: "",
     });
     onClose();
   };
@@ -296,6 +302,21 @@ function CreateMemberDialog({
             </div>
           </div>
 
+          <div className="space-y-1">
+            <Label>Membership Plan</Label>
+            <Select value={form.plan_id} onValueChange={(v) => set("plan_id", v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {plans.filter(p => p.is_active !== false).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — ₹{p.price}/{p.duration_days}d
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Emergency Contact</Label>
@@ -328,11 +349,12 @@ function CreateMemberDialog({
 }
 
 function EditMemberDialog({
-  member, onClose, trainers, onUpdate, isLoading
+  member, onClose, trainers, plans, onUpdate, isLoading
 }: {
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
   onUpdate: (input: any) => Promise<any>;
   isLoading: boolean;
 }) {
@@ -349,6 +371,7 @@ function EditMemberDialog({
     membership_status: member.membership_status,
     membership_start: member.membership_start || "",
     membership_end: member.membership_end || "",
+    plan_id: member.plan_id || "",
   });
 
   const set = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
@@ -369,6 +392,7 @@ function EditMemberDialog({
       membership_status: form.membership_status,
       membership_start: form.membership_start || null,
       membership_end: form.membership_end || null,
+      plan_id: form.plan_id && form.plan_id !== "none" ? form.plan_id : null,
     });
     onClose();
   };
@@ -419,6 +443,21 @@ function EditMemberDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Membership Plan</Label>
+            <Select value={form.plan_id} onValueChange={(v) => set("plan_id", v)}>
+              <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {plans.filter(p => p.is_active).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — ₹{p.price}/{p.duration_days}d
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -477,11 +516,12 @@ function EditMemberDialog({
 }
 
 function MemberDetailDialog({
-  member, onClose, trainers
+  member, onClose, trainers, plans
 }: {
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number; is_active: boolean }[];
 }) {
   const bmi = member.weight_kg && member.height_cm
     ? (Number(member.weight_kg) / ((Number(member.height_cm) / 100) ** 2)).toFixed(1)
@@ -504,6 +544,7 @@ function MemberDetailDialog({
           <DetailRow label="Height" value={member.height_cm ? `${member.height_cm} cm` : "—"} />
           <DetailRow label="BMI" value={bmi || "—"} />
           <DetailRow label="Fitness Goal" value={member.fitness_goal || "—"} />
+          <DetailRow label="Plan" value={plans?.find((p) => p.id === member.plan_id)?.name || "—"} />
           <DetailRow label="Trainer" value={trainerName} />
           <DetailRow label="Membership Start" value={member.membership_start || "—"} />
           <DetailRow label="Membership End" value={member.membership_end || "—"} />

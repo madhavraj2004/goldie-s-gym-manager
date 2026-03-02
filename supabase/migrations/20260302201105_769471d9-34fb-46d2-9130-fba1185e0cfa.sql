@@ -1,0 +1,1 @@
+ALTER TABLE public.member_profiles ADD COLUMN plan_id uuid REFERENCES public.membership_plans(id) ON DELETE SET NULL DEFAULT NULL;
