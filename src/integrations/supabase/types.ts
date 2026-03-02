@@ -53,6 +53,7 @@ export type Database = {
           membership_end: string | null
           membership_start: string | null
           membership_status: string
+          plan_id: string | null
           updated_at: string
           user_id: string
           weight_kg: number | null
@@ -71,6 +72,7 @@ export type Database = {
           membership_end?: string | null
           membership_start?: string | null
           membership_status?: string
+          plan_id?: string | null
           updated_at?: string
           user_id: string
           weight_kg?: number | null
@@ -89,11 +91,20 @@ export type Database = {
           membership_end?: string | null
           membership_start?: string | null
           membership_status?: string
+          plan_id?: string | null
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "member_profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "membership_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       membership_plans: {
         Row: {
