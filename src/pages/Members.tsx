@@ -486,11 +486,12 @@ function EditMemberDialog({
 }
 
 function MemberDetailDialog({
-  member, onClose, trainers
+  member, onClose, trainers, plans
 }: {
   member: MemberWithProfile;
   onClose: () => void;
   trainers: { user_id: string; full_name: string | null }[];
+  plans: { id: string; name: string; price: number; duration_days: number }[];
 }) {
   const bmi = member.weight_kg && member.height_cm
     ? (Number(member.weight_kg) / ((Number(member.height_cm) / 100) ** 2)).toFixed(1)
@@ -513,6 +514,7 @@ function MemberDetailDialog({
           <DetailRow label="Height" value={member.height_cm ? `${member.height_cm} cm` : "—"} />
           <DetailRow label="BMI" value={bmi || "—"} />
           <DetailRow label="Fitness Goal" value={member.fitness_goal || "—"} />
+          <DetailRow label="Plan" value={plans?.find((p) => p.id === member.plan_id)?.name || "—"} />
           <DetailRow label="Trainer" value={trainerName} />
           <DetailRow label="Membership Start" value={member.membership_start || "—"} />
           <DetailRow label="Membership End" value={member.membership_end || "—"} />
