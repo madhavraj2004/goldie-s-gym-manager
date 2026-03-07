@@ -136,11 +136,23 @@ function AdminPayments() {
   const { data: members } = useQuery({
     queryKey: ["admin-members-for-payment"],
     queryFn: async () => {
-      const { data: mp } = await supabase.from("member_profiles").select("user_id");
+      const { data: mp } = await supabase.from("member_profiles").select("user_id, plan_id, membership_status");
       if (!mp?.length) return [];
       const userIds = mp.map((m) => m.user_id);
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
-      return profiles || [];
+      return mp.map((m) => ({
+        ...m,
+        full_name: profiles?.find((p) => p.user_id === m.user_id)?.full_name || "Unnamed",
+      }));
+    },
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["plans-for-payment"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("membership_plans").select("*").eq("is_active", true).order("price");
+      if (error) throw error;
+      return data || [];
     },
   });
 
