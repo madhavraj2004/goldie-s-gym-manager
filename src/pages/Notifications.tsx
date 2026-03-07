@@ -2,16 +2,30 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Bell, Check, CheckCheck, Send, Megaphone } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Notifications = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -46,27 +60,92 @@ const Notifications = () => {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["notifications"] }); toast.success("All marked as read"); },
   });
 
+  const sendAnnouncement = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("send-announcement", {
+        body: { title, message, type: "announcement" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Announcement sent to ${data.sent} members`);
+      setTitle("");
+      setMessage("");
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
   const typeIcon = (type: string) => {
     if (type === "payment_due") return "💰";
     if (type === "achievement") return "🏆";
-    return "📢";
+    if (type === "announcement") return "📢";
+    return "🔔";
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <h1 className="font-display text-3xl font-bold">Notifications</h1>
             {unreadCount > 0 && <Badge variant="destructive">{unreadCount} new</Badge>}
           </div>
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>
-              <CheckCheck className="h-4 w-4 mr-2" /> Mark All Read
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" onClick={() => markAllRead.mutate()}>
+                <CheckCheck className="h-4 w-4 mr-2" /> Mark All Read
+              </Button>
+            )}
+            {role === "admin" && (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Megaphone className="h-4 w-4 mr-2" /> Send Announcement
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Announcement to All Members</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="ann-title">Title</Label>
+                      <Input
+                        id="ann-title"
+                        placeholder="e.g. Gym Closed for Maintenance"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ann-message">Message</Label>
+                      <Textarea
+                        id="ann-message"
+                        placeholder="Write your announcement..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={4}
+                      />
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={!title.trim() || !message.trim() || sendAnnouncement.isPending}
+                      onClick={() => sendAnnouncement.mutate()}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {sendAnnouncement.isPending ? "Sending..." : "Send to All Members"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         {notifications?.length ? (
