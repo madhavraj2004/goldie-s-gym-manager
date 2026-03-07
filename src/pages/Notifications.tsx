@@ -8,10 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Bell, Check, CheckCheck, Send, Megaphone } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, Check, CheckCheck, Send, Megaphone, Users, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,10 @@ const Notifications = () => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+  const [targetTab, setTargetTab] = useState("all");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPlan, setFilterPlan] = useState("all");
 
   const { data: notifications } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -41,6 +48,32 @@ const Notifications = () => {
       return data || [];
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch members for targeted sending (admin only)
+  const { data: members } = useQuery({
+    queryKey: ["members-for-notify"],
+    queryFn: async () => {
+      const { data: mp } = await supabase.from("member_profiles").select("user_id, membership_status, plan_id");
+      if (!mp?.length) return [];
+      const userIds = mp.map((m) => m.user_id);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      return mp.map((m) => ({
+        ...m,
+        full_name: profiles?.find((p) => p.user_id === m.user_id)?.full_name || "Unnamed",
+      }));
+    },
+    enabled: role === "admin",
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["plans-for-notify"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("membership_plans").select("id, name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: role === "admin",
   });
 
   const markRead = useMutation({
@@ -62,22 +95,45 @@ const Notifications = () => {
 
   const sendAnnouncement = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("send-announcement", {
-        body: { title, message, type: "announcement" },
-      });
+      const body: Record<string, unknown> = { title, message, type: "announcement" };
+
+      if (targetTab === "specific") {
+        body.target_type = "specific";
+        body.target_user_ids = selectedMembers;
+      } else if (targetTab === "filter") {
+        body.target_type = "filter";
+        body.target_status = filterStatus;
+        body.target_plan_id = filterPlan;
+      }
+      // else "all" — no target_type, sends to everyone
+
+      const { data, error } = await supabase.functions.invoke("send-announcement", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Announcement sent to ${data.sent} members`);
-      setTitle("");
-      setMessage("");
-      setOpen(false);
-      qc.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success(`Announcement sent to ${data.sent} member${data.sent !== 1 ? "s" : ""}`);
+      resetForm();
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const resetForm = () => {
+    setTitle("");
+    setMessage("");
+    setTargetTab("all");
+    setSelectedMembers([]);
+    setFilterStatus("all");
+    setFilterPlan("all");
+    setOpen(false);
+  };
+
+  const toggleMember = (uid: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(uid) ? prev.filter((id) => id !== uid) : [...prev, uid]
+    );
+  };
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
@@ -87,6 +143,13 @@ const Notifications = () => {
     if (type === "announcement") return "📢";
     return "🔔";
   };
+
+  const canSend =
+    title.trim() &&
+    message.trim() &&
+    (targetTab === "all" ||
+      (targetTab === "specific" && selectedMembers.length > 0) ||
+      targetTab === "filter");
 
   return (
     <DashboardLayout>
@@ -109,9 +172,9 @@ const Notifications = () => {
                     <Megaphone className="h-4 w-4 mr-2" /> Send Announcement
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Send Announcement to All Members</DialogTitle>
+                    <DialogTitle>Send Announcement</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-2">
                     <div className="space-y-2">
@@ -130,16 +193,101 @@ const Notifications = () => {
                         placeholder="Write your announcement..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
-                        rows={4}
+                        rows={3}
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Send To</Label>
+                      <Tabs value={targetTab} onValueChange={setTargetTab}>
+                        <TabsList className="w-full">
+                          <TabsTrigger value="all" className="flex-1 gap-1">
+                            <Users className="h-3.5 w-3.5" /> All Members
+                          </TabsTrigger>
+                          <TabsTrigger value="specific" className="flex-1 gap-1">
+                            <Check className="h-3.5 w-3.5" /> Select
+                          </TabsTrigger>
+                          <TabsTrigger value="filter" className="flex-1 gap-1">
+                            <Filter className="h-3.5 w-3.5" /> Filter
+                          </TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="all" className="pt-2">
+                          <p className="text-sm text-muted-foreground">
+                            Notification will be sent to all {members?.length || 0} members.
+                          </p>
+                        </TabsContent>
+
+                        <TabsContent value="specific" className="pt-2">
+                          <div className="border rounded-md max-h-48 overflow-y-auto divide-y">
+                            {members?.map((m) => (
+                              <label
+                                key={m.user_id}
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-accent/50 cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={selectedMembers.includes(m.user_id)}
+                                  onCheckedChange={() => toggleMember(m.user_id)}
+                                />
+                                <span className="text-sm flex-1">{m.full_name}</span>
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {m.membership_status}
+                                </Badge>
+                              </label>
+                            ))}
+                            {!members?.length && (
+                              <p className="text-sm text-muted-foreground text-center py-4">No members found</p>
+                            )}
+                          </div>
+                          {selectedMembers.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {selectedMembers.length} member{selectedMembers.length > 1 ? "s" : ""} selected
+                            </p>
+                          )}
+                        </TabsContent>
+
+                        <TabsContent value="filter" className="pt-2 space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Membership Status</Label>
+                            <Select value={filterStatus} onValueChange={setFilterStatus}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="expired">Expired</SelectItem>
+                                <SelectItem value="frozen">Frozen</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Membership Plan</Label>
+                            <Select value={filterPlan} onValueChange={setFilterPlan}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Plans</SelectItem>
+                                {plans?.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+
                     <Button
                       className="w-full"
-                      disabled={!title.trim() || !message.trim() || sendAnnouncement.isPending}
+                      disabled={!canSend || sendAnnouncement.isPending}
                       onClick={() => sendAnnouncement.mutate()}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      {sendAnnouncement.isPending ? "Sending..." : "Send to All Members"}
+                      {sendAnnouncement.isPending ? "Sending..." : "Send Notification"}
                     </Button>
                   </div>
                 </DialogContent>
