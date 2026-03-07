@@ -323,6 +323,16 @@ function AdminPayments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Subscribe to Plan Dialog */}
+      <SubscribePlanDialog
+        open={showSubscribe}
+        onClose={() => setShowSubscribe(false)}
+        members={members || []}
+        plans={plans || []}
+        onSubscribe={subscribeToPlan.mutateAsync}
+        isLoading={subscribeToPlan.isPending}
+      />
     </DashboardLayout>
   );
 }
