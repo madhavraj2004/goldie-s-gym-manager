@@ -111,6 +111,7 @@ function AdminPayments() {
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showDue, setShowDue] = useState(false);
+  const [showSubscribe, setShowSubscribe] = useState(false);
 
   const { data: allPayments } = useQuery({
     queryKey: ["admin-payments"],
