@@ -427,4 +427,95 @@ function AddPaymentDialog({
   );
 }
 
+function SubscribePlanDialog({
+  open, onClose, members, plans, onSubscribe, isLoading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  members: { user_id: string; full_name: string; plan_id?: string | null; membership_status?: string }[];
+  plans: { id: string; name: string; price: number; duration_days: number }[];
+  onSubscribe: (input: { user_id: string; plan_id: string; method: string }) => Promise<any>;
+  isLoading: boolean;
+}) {
+  const [userId, setUserId] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [method, setMethod] = useState("cash");
+
+  const selectedPlan = plans.find((p) => p.id === planId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSubscribe({ user_id: userId, plan_id: planId, method });
+    setUserId("");
+    setPlanId("");
+    setMethod("cash");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Subscribe Member to Plan</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Member *</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Plan *</Label>
+            <Select value={planId} onValueChange={setPlanId}>
+              <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
+              <SelectContent>
+                {plans.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — ₹{p.price} / {p.duration_days} days
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedPlan && (
+            <Card>
+              <CardContent className="py-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-bold">₹{selectedPlan.price.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span>{selectedPlan.duration_days} days</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          <div className="space-y-1">
+            <Label>Payment Method</Label>
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="upi">UPI</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isLoading || !userId || !planId}>
+              {isLoading ? "Processing..." : "Subscribe & Create Invoice"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default Payments;
