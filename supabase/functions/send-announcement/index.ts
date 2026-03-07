@@ -36,25 +36,44 @@ Deno.serve(async (req) => {
 
     if (!roleData) throw new Error("Admin access required");
 
-    const { title, message, type } = await req.json();
+    const { title, message, type, target_type, target_user_ids, target_status, target_plan_id } = await req.json();
     if (!title || !message) throw new Error("Title and message are required");
 
-    // Get all member user_ids
-    const { data: members, error: mErr } = await adminClient
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "member");
-    if (mErr) throw mErr;
+    let targetUserIds: string[] = [];
 
-    if (!members?.length) {
+    if (target_type === "specific" && target_user_ids?.length) {
+      // Send to specific members
+      targetUserIds = target_user_ids;
+    } else if (target_type === "filter") {
+      // Filter by status and/or plan
+      let query = adminClient.from("member_profiles").select("user_id");
+      if (target_status && target_status !== "all") {
+        query = query.eq("membership_status", target_status);
+      }
+      if (target_plan_id && target_plan_id !== "all") {
+        query = query.eq("plan_id", target_plan_id);
+      }
+      const { data: filtered, error: fErr } = await query;
+      if (fErr) throw fErr;
+      targetUserIds = (filtered || []).map((m: any) => m.user_id);
+    } else {
+      // Default: all members
+      const { data: members, error: mErr } = await adminClient
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "member");
+      if (mErr) throw mErr;
+      targetUserIds = (members || []).map((m: any) => m.user_id);
+    }
+
+    if (!targetUserIds.length) {
       return new Response(JSON.stringify({ sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Batch insert notifications
-    const rows = members.map((m) => ({
-      user_id: m.user_id,
+    const rows = targetUserIds.map((uid: string) => ({
+      user_id: uid,
       title,
       message,
       type: type || "announcement",

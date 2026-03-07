@@ -111,6 +111,7 @@ function AdminPayments() {
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showDue, setShowDue] = useState(false);
+  const [showSubscribe, setShowSubscribe] = useState(false);
 
   const { data: allPayments } = useQuery({
     queryKey: ["admin-payments"],
@@ -135,11 +136,23 @@ function AdminPayments() {
   const { data: members } = useQuery({
     queryKey: ["admin-members-for-payment"],
     queryFn: async () => {
-      const { data: mp } = await supabase.from("member_profiles").select("user_id");
+      const { data: mp } = await supabase.from("member_profiles").select("user_id, plan_id, membership_status");
       if (!mp?.length) return [];
       const userIds = mp.map((m) => m.user_id);
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
-      return profiles || [];
+      return mp.map((m) => ({
+        ...m,
+        full_name: profiles?.find((p) => p.user_id === m.user_id)?.full_name || "Unnamed",
+      }));
+    },
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["plans-for-payment"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("membership_plans").select("*").eq("is_active", true).order("price");
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -152,6 +165,44 @@ function AdminPayments() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-payments"] }); toast.success("Payment recorded"); setShowAdd(false); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const subscribeToPlan = useMutation({
+    mutationFn: async ({ user_id, plan_id, method }: { user_id: string; plan_id: string; method: string }) => {
+      const plan = plans?.find((p) => p.id === plan_id);
+      if (!plan) throw new Error("Plan not found");
+
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + plan.duration_days);
+
+      // Update member profile with plan and dates
+      const { error: mpErr } = await supabase.from("member_profiles").update({
+        plan_id,
+        membership_status: "active",
+        membership_start: startDate.toISOString().split("T")[0],
+        membership_end: endDate.toISOString().split("T")[0],
+      }).eq("user_id", user_id);
+      if (mpErr) throw mpErr;
+
+      // Create pending payment record
+      const { error: payErr } = await supabase.from("payments").insert({
+        user_id,
+        amount: plan.price,
+        status: "pending",
+        method,
+        description: `${plan.name} subscription (${plan.duration_days} days)`,
+        due_date: startDate.toISOString().split("T")[0],
+      });
+      if (payErr) throw payErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+      qc.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Member subscribed to plan successfully");
+      setShowSubscribe(false);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -181,9 +232,12 @@ function AdminPayments() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="font-display text-3xl font-bold">Payments</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setShowDue(true)}>
               <Send className="h-4 w-4 mr-2" /> Send Due Reminders
+            </Button>
+            <Button variant="secondary" onClick={() => setShowSubscribe(true)}>
+              <CreditCard className="h-4 w-4 mr-2" /> Subscribe to Plan
             </Button>
             <Button onClick={() => setShowAdd(true)}>
               <Plus className="h-4 w-4 mr-2" /> Record Payment
@@ -269,6 +323,16 @@ function AdminPayments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Subscribe to Plan Dialog */}
+      <SubscribePlanDialog
+        open={showSubscribe}
+        onClose={() => setShowSubscribe(false)}
+        members={members || []}
+        plans={plans || []}
+        onSubscribe={subscribeToPlan.mutateAsync}
+        isLoading={subscribeToPlan.isPending}
+      />
     </DashboardLayout>
   );
 }
@@ -356,6 +420,97 @@ function AddPaymentDialog({
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" disabled={isLoading || !form.user_id}>{isLoading ? "Saving..." : "Record Payment"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SubscribePlanDialog({
+  open, onClose, members, plans, onSubscribe, isLoading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  members: { user_id: string; full_name: string; plan_id?: string | null; membership_status?: string }[];
+  plans: { id: string; name: string; price: number; duration_days: number }[];
+  onSubscribe: (input: { user_id: string; plan_id: string; method: string }) => Promise<any>;
+  isLoading: boolean;
+}) {
+  const [userId, setUserId] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [method, setMethod] = useState("cash");
+
+  const selectedPlan = plans.find((p) => p.id === planId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await onSubscribe({ user_id: userId, plan_id: planId, method });
+    setUserId("");
+    setPlanId("");
+    setMethod("cash");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Subscribe Member to Plan</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Member *</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger><SelectValue placeholder="Select member" /></SelectTrigger>
+              <SelectContent>
+                {members.map((m) => (
+                  <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label>Plan *</Label>
+            <Select value={planId} onValueChange={setPlanId}>
+              <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
+              <SelectContent>
+                {plans.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — ₹{p.price} / {p.duration_days} days
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedPlan && (
+            <Card>
+              <CardContent className="py-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-bold">₹{selectedPlan.price.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span>{selectedPlan.duration_days} days</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          <div className="space-y-1">
+            <Label>Payment Method</Label>
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="upi">UPI</SelectItem>
+                <SelectItem value="card">Card</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={isLoading || !userId || !planId}>
+              {isLoading ? "Processing..." : "Subscribe & Create Invoice"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
