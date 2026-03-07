@@ -168,6 +168,44 @@ function AdminPayments() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const subscribeToPlan = useMutation({
+    mutationFn: async ({ user_id, plan_id, method }: { user_id: string; plan_id: string; method: string }) => {
+      const plan = plans?.find((p) => p.id === plan_id);
+      if (!plan) throw new Error("Plan not found");
+
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + plan.duration_days);
+
+      // Update member profile with plan and dates
+      const { error: mpErr } = await supabase.from("member_profiles").update({
+        plan_id,
+        membership_status: "active",
+        membership_start: startDate.toISOString().split("T")[0],
+        membership_end: endDate.toISOString().split("T")[0],
+      }).eq("user_id", user_id);
+      if (mpErr) throw mpErr;
+
+      // Create pending payment record
+      const { error: payErr } = await supabase.from("payments").insert({
+        user_id,
+        amount: plan.price,
+        status: "pending",
+        method,
+        description: `${plan.name} subscription (${plan.duration_days} days)`,
+        due_date: startDate.toISOString().split("T")[0],
+      });
+      if (payErr) throw payErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+      qc.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Member subscribed to plan successfully");
+      setShowSubscribe(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const sendDueNotifications = useMutation({
     mutationFn: async () => {
       const pending = allPayments?.filter((p) => p.status === "pending") || [];
@@ -194,9 +232,12 @@ function AdminPayments() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="font-display text-3xl font-bold">Payments</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => setShowDue(true)}>
               <Send className="h-4 w-4 mr-2" /> Send Due Reminders
+            </Button>
+            <Button variant="secondary" onClick={() => setShowSubscribe(true)}>
+              <CreditCard className="h-4 w-4 mr-2" /> Subscribe to Plan
             </Button>
             <Button onClick={() => setShowAdd(true)}>
               <Plus className="h-4 w-4 mr-2" /> Record Payment
