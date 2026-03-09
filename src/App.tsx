@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import Trainers from "./pages/Trainers";
@@ -41,6 +43,8 @@ const AppRoutes = () => (
     <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+    <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+    <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
     <Route path="/trainers" element={<ProtectedRoute><Trainers /></ProtectedRoute>} />
