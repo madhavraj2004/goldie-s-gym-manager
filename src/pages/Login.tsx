@@ -50,9 +50,14 @@ const Login = () => {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account? <Link to="/register" className="text-primary hover:underline">Sign up</Link>
-          </p>
+          <div className="text-center text-sm text-muted-foreground mt-4 space-y-2">
+            <p>
+              <Link to="/forgot-password" className="text-primary hover:underline">Forgot your password?</Link>
+            </p>
+            <p>
+              Don't have an account? <Link to="/register" className="text-primary hover:underline">Sign up</Link>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
