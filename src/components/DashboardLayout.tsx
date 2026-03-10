@@ -34,6 +34,7 @@ const trainerLinks = [
 
 const memberLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/my-plan", label: "My Plan", icon: CreditCard },
   { to: "/attendance", label: "Attendance", icon: CalendarCheck },
   { to: "/payments", label: "Payments", icon: CreditCard },
   { to: "/milestones", label: "Progress", icon: Trophy },

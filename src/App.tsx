@@ -20,6 +20,7 @@ import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
+import MyPlan from "./pages/MyPlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const AppRoutes = () => (
     <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
     <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+    <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
