@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { initPushNotifications, removePushListeners } from "@/lib/pushNotifications";
 
 type AppRole = "admin" | "trainer" | "member";
 
@@ -49,7 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchRole(session.user.id);
+          initPushNotifications(session.user.id);
         } else {
+          removePushListeners();
           setRole(null);
         }
         setLoading(false);
@@ -73,10 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setRole(null);
+    try {
+      await removePushListeners();
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Force clear state even if signOut API fails
+      setSession(null);
+      setUser(null);
+      setRole(null);
+    }
   };
 
   return (
