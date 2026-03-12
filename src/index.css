@@ -1,9 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
-
 @layer base {
   :root {
     --background: 0 0% 7%;
@@ -62,8 +61,17 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-  }
+  @apply bg-background text-foreground font-sans;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Oswald', sans-serif;
