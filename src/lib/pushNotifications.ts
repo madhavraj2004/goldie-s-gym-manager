@@ -24,7 +24,7 @@ export const initPushNotifications = async (userId: string) => {
     // Store the token in the database for this user
     try {
       const { error } = await supabase
-        .from("push_tokens")
+        .from("push_tokens" as any)
         .upsert(
           { user_id: userId, token: token.value, platform: Capacitor.getPlatform() },
           { onConflict: "user_id" }
