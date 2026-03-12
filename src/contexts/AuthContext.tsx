@@ -50,7 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchRole(session.user.id);
+          initPushNotifications(session.user.id);
         } else {
+          removePushListeners();
           setRole(null);
         }
         setLoading(false);
