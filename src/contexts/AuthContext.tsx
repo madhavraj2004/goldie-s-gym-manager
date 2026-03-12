@@ -76,10 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setRole(null);
+    try {
+      await removePushListeners();
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+      // Force clear state even if signOut API fails
+      setSession(null);
+      setUser(null);
+      setRole(null);
+    }
   };
 
   return (
