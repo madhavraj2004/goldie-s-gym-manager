@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/integrations/supabase/client";
 
 export const initPushNotifications = async (userId: string) => {
@@ -40,9 +41,21 @@ export const initPushNotifications = async (userId: string) => {
     console.error("Push registration error:", error);
   });
 
-  // Handle received notifications while app is in foreground
-  PushNotifications.addListener("pushNotificationReceived", (notification) => {
+  // Show notification in system tray when app is in foreground
+  PushNotifications.addListener("pushNotificationReceived", async (notification) => {
     console.log("Push notification received:", notification);
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          title: notification.title || "Goldie's Gym",
+          body: notification.body || "",
+          id: Date.now(),
+          schedule: { at: new Date(Date.now() + 100) },
+          sound: undefined,
+          smallIcon: "ic_launcher",
+        },
+      ],
+    });
   });
 
   // Handle notification tap (opens the app)
