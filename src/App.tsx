@@ -61,6 +61,7 @@ const AppRoutes = () => (
     <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
     <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
     <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+    <Route path="/notification-history" element={<ProtectedRoute><NotificationHistory /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
