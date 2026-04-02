@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { User, Lock, Shield, Bell } from "lucide-react";
 
 const SettingsPage = () => {
   const { user, role } = useAuth();
