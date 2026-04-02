@@ -44,6 +44,9 @@ export const initPushNotifications = async (userId: string) => {
   // Show notification in system tray when app is in foreground
   PushNotifications.addListener("pushNotificationReceived", async (notification) => {
     console.log("Push notification received:", notification);
+    const soundEnabled = localStorage.getItem("notif_sound") !== "false";
+    const vibrationEnabled = localStorage.getItem("notif_vibration") !== "false";
+
     await LocalNotifications.schedule({
       notifications: [
         {
@@ -51,8 +54,9 @@ export const initPushNotifications = async (userId: string) => {
           body: notification.body || "",
           id: Date.now(),
           schedule: { at: new Date(Date.now() + 100) },
-          sound: undefined,
+          sound: soundEnabled ? "default" : undefined,
           smallIcon: "ic_launcher",
+          extra: { vibrate: vibrationEnabled },
         },
       ],
     });
