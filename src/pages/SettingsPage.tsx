@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { User, Lock, Shield, Bell } from "lucide-react";
 
 const SettingsPage = () => {
   const { user, role } = useAuth();
@@ -24,6 +25,22 @@ const SettingsPage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // Notification preferences (stored in localStorage)
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("notif_sound") !== "false");
+  const [vibrationEnabled, setVibrationEnabled] = useState(() => localStorage.getItem("notif_vibration") !== "false");
+
+  const handleSoundToggle = (val: boolean) => {
+    setSoundEnabled(val);
+    localStorage.setItem("notif_sound", String(val));
+    toast({ title: val ? "Sound enabled" : "Sound disabled", description: "Notification sound preference saved." });
+  };
+
+  const handleVibrationToggle = (val: boolean) => {
+    setVibrationEnabled(val);
+    localStorage.setItem("notif_vibration", String(val));
+    toast({ title: val ? "Vibration enabled" : "Vibration disabled", description: "Notification vibration preference saved." });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -92,6 +109,7 @@ const SettingsPage = () => {
           <TabsList>
             <TabsTrigger value="profile" className="gap-2"><User className="h-4 w-4" /> Profile</TabsTrigger>
             <TabsTrigger value="security" className="gap-2"><Lock className="h-4 w-4" /> Security</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2"><Bell className="h-4 w-4" /> Notifications</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -157,6 +175,31 @@ const SettingsPage = () => {
                 <Button onClick={handleChangePassword} disabled={changingPassword}>
                   {changingPassword ? "Updating…" : "Update Password"}
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* Notifications Tab */}
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Customize how you receive push notifications.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Notification Sound</Label>
+                    <p className="text-sm text-muted-foreground">Play a sound when a notification arrives.</p>
+                  </div>
+                  <Switch checked={soundEnabled} onCheckedChange={handleSoundToggle} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Vibration</Label>
+                    <p className="text-sm text-muted-foreground">Vibrate when a notification arrives.</p>
+                  </div>
+                  <Switch checked={vibrationEnabled} onCheckedChange={handleVibrationToggle} />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

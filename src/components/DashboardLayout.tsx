@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, Dumbbell, CreditCard, CalendarCheck,
-  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X
+  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const adminLinks = [
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/notification-history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -29,6 +30,7 @@ const trainerLinks = [
   { to: "/milestones", label: "Milestones", icon: Trophy },
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/notification-history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -40,6 +42,7 @@ const memberLinks = [
   { to: "/milestones", label: "Progress", icon: Trophy },
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/notification-history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
