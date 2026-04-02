@@ -178,6 +178,31 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Notifications Tab */}
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Customize how you receive push notifications.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Notification Sound</Label>
+                    <p className="text-sm text-muted-foreground">Play a sound when a notification arrives.</p>
+                  </div>
+                  <Switch checked={soundEnabled} onCheckedChange={handleSoundToggle} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Vibration</Label>
+                    <p className="text-sm text-muted-foreground">Vibrate when a notification arrives.</p>
+                  </div>
+                  <Switch checked={vibrationEnabled} onCheckedChange={handleVibrationToggle} />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
