@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, Dumbbell, CreditCard, CalendarCheck,
-  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X
+  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
