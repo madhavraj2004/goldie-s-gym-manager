@@ -26,6 +26,22 @@ const SettingsPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Notification preferences (stored in localStorage)
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("notif_sound") !== "false");
+  const [vibrationEnabled, setVibrationEnabled] = useState(() => localStorage.getItem("notif_vibration") !== "false");
+
+  const handleSoundToggle = (val: boolean) => {
+    setSoundEnabled(val);
+    localStorage.setItem("notif_sound", String(val));
+    toast({ title: val ? "Sound enabled" : "Sound disabled", description: "Notification sound preference saved." });
+  };
+
+  const handleVibrationToggle = (val: boolean) => {
+    setVibrationEnabled(val);
+    localStorage.setItem("notif_vibration", String(val));
+    toast({ title: val ? "Vibration enabled" : "Vibration disabled", description: "Notification vibration preference saved." });
+  };
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
