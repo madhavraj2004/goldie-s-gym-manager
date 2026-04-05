@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { User, Lock, Shield, Bell } from "lucide-react";
+import { User, Lock, Shield, Bell, RefreshCw } from "lucide-react";
 
 const SettingsPage = () => {
   const { user, role } = useAuth();
@@ -199,6 +199,36 @@ const SettingsPage = () => {
                     <p className="text-sm text-muted-foreground">Vibrate when a notification arrives.</p>
                   </div>
                   <Switch checked={vibrationEnabled} onCheckedChange={handleVibrationToggle} />
+                </div>
+
+                {/* Check for Updates */}
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>App Updates</Label>
+                      <p className="text-sm text-muted-foreground">Manually check if a new version is available.</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        toast({ title: "Checking for updates..." });
+                        try {
+                          const regs = await navigator.serviceWorker?.getRegistrations();
+                          if (regs?.length) {
+                            await Promise.all(regs.map((r) => r.update()));
+                            toast({ title: "Check complete", description: "If an update is available, you'll see a prompt shortly." });
+                          } else {
+                            toast({ title: "No service worker", description: "PWA is not installed or service worker not registered.", variant: "destructive" });
+                          }
+                        } catch {
+                          toast({ title: "Update check failed", variant: "destructive" });
+                        }
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" /> Check for Updates
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
