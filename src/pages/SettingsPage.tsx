@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { User, Lock, Shield, Bell } from "lucide-react";
+import { User, Lock, Shield, Bell, RefreshCw } from "lucide-react";
 
 const SettingsPage = () => {
   const { user, role } = useAuth();
