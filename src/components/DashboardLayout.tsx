@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, Dumbbell, CreditCard, CalendarCheck,
-  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History
+  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ const adminLinks = [
   { to: "/messages", label: "Messages", icon: MessageSquare },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/notification-history", label: "History", icon: History },
+  { to: "/manage-roles", label: "Manage Roles", icon: ShieldCheck },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
