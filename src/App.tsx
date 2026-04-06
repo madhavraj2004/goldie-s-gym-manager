@@ -23,6 +23,7 @@ import Reports from "./pages/Reports";
 import SettingsPage from "./pages/SettingsPage";
 import MyPlan from "./pages/MyPlan";
 import NotificationHistory from "./pages/NotificationHistory";
+import ManageRoles from "./pages/ManageRoles";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
