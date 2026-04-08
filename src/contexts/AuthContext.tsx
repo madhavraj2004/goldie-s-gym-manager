@@ -26,7 +26,10 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
+  const [role, setRole] = useState<AppRole | null>(() => {
+    const cached = localStorage.getItem("cached_role");
+    return cached ? (cached as AppRole) : null;
+  });
   const [loading, setLoading] = useState(true);
 
   const fetchRole = async (userId: string) => {
@@ -35,11 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .select("role")
       .eq("user_id", userId)
       .maybeSingle();
-    setRole((data?.role as AppRole) ?? "member");
+    const resolved = (data?.role as AppRole) ?? "member";
+    setRole(resolved);
+    localStorage.setItem("cached_role", resolved);
   };
 
   useEffect(() => {
-    // Safety timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 5000);
@@ -54,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           removePushListeners();
           setRole(null);
+          localStorage.removeItem("cached_role");
         }
         setLoading(false);
       }
@@ -65,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         fetchRole(session.user.id).finally(() => setLoading(false));
       } else {
+        localStorage.removeItem("cached_role");
         setLoading(false);
       }
     });
@@ -81,13 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setUser(null);
       setRole(null);
+      localStorage.removeItem("cached_role");
       await supabase.auth.signOut();
     } catch (error) {
       console.error("Sign out error:", error);
-      // Force clear state even if signOut API fails
       setSession(null);
       setUser(null);
       setRole(null);
+      localStorage.removeItem("cached_role");
     }
   };
 
