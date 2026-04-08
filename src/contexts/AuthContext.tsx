@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { initPushNotifications, removePushListeners } from "@/lib/pushNotifications";
@@ -31,49 +31,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cached ? (cached as AppRole) : null;
   });
   const [loading, setLoading] = useState(true);
-
-  const fetchRole = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    const resolved = (data?.role as AppRole) ?? "member";
-    setRole(resolved);
-    localStorage.setItem("cached_role", resolved);
-  };
+  const initialized = useRef(false);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+    // Safety timeout
+    const timeout = setTimeout(() => setLoading(false), 3000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchRole(session.user.id);
-          initPushNotifications(session.user.id);
+      (_event, newSession) => {
+        // Set session/user synchronously — never block with await
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+
+        if (newSession?.user) {
+          // Use cached role to stop loading immediately, then verify in background
+          const cachedRole = localStorage.getItem("cached_role") as AppRole | null;
+          if (cachedRole && !initialized.current) {
+            setRole(cachedRole);
+            setLoading(false);
+            initialized.current = true;
+          }
+
+          // Fetch fresh role in background (non-blocking)
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", newSession.user.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              const freshRole = (data?.role as AppRole) ?? "member";
+              setRole(freshRole);
+              localStorage.setItem("cached_role", freshRole);
+              setLoading(false);
+              initialized.current = true;
+            });
+
+          // Init push in background
+          initPushNotifications(newSession.user.id);
         } else {
           removePushListeners();
           setRole(null);
           localStorage.removeItem("cached_role");
+          setLoading(false);
+          initialized.current = true;
         }
-        setLoading(false);
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchRole(session.user.id).finally(() => setLoading(false));
-      } else {
-        localStorage.removeItem("cached_role");
-        setLoading(false);
-      }
-    });
 
     return () => {
       clearTimeout(timeout);
@@ -88,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setRole(null);
       localStorage.removeItem("cached_role");
+      initialized.current = false;
       await supabase.auth.signOut();
     } catch (error) {
       console.error("Sign out error:", error);
