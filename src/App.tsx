@@ -28,16 +28,25 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AppLoader() {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent" />
+      <p className="text-muted-foreground text-sm animate-pulse">Loading Goldie's Gym...</p>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, role, loading } = useAuth();
-  if (loading || (session && role === null)) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading || (session && role === null)) return <AppLoader />;
   if (!session) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>;
+  if (loading) return <AppLoader />;
   if (session) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
