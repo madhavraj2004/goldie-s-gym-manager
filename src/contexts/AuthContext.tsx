@@ -87,13 +87,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       setUser(null);
       setRole(null);
+      localStorage.removeItem("cached_role");
       await supabase.auth.signOut();
     } catch (error) {
       console.error("Sign out error:", error);
-      // Force clear state even if signOut API fails
       setSession(null);
       setUser(null);
       setRole(null);
+      localStorage.removeItem("cached_role");
     }
   };
 
