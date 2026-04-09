@@ -135,16 +135,15 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           <div className="flex-1" />
           {!isStandalone && installPrompt && (
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              className="lg:hidden"
               onClick={async () => {
                 await installPrompt.prompt();
                 const { outcome } = await installPrompt.userChoice;
                 if (outcome === "accepted") setInstallPrompt(null);
               }}
             >
-              <Download className="h-4 w-4 mr-1" /> Install
+              <Download className="h-4 w-4 mr-1" /> Install App
             </Button>
           )}
           <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
