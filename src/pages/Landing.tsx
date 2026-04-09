@@ -55,16 +55,15 @@ const Landing = () => {
             <img src={gymLogo} alt="Goldie's Gym" className="h-12 w-auto" />
             <span className="font-display text-xl font-bold text-primary tracking-wider hidden sm:inline">GOLDIE'S GYM</span>
           </Link>
-          <div className="flex gap-2 sm:gap-3">
-            <Button variant="outline" size="sm" asChild><Link to="/login">Member Login</Link></Button>
-            <Button variant="ghost" size="sm" asChild><Link to="/login">Trainer Login</Link></Button>
-            <Button size="sm" asChild><Link to="/register">Join Now</Link></Button>
+          <div className="flex gap-1 sm:gap-3">
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-3" asChild><Link to="/login">Login</Link></Button>
+            <Button size="sm" className="text-xs sm:text-sm px-2 sm:px-3" asChild><Link to="/register">Join Now</Link></Button>
           </div>
         </div>
       </header>
 
       {/* Hero Carousel */}
-      <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
+      <section className="relative h-[60vh] sm:h-[70vh] min-h-[400px] overflow-hidden">
         {slides.map((slide, i) => (
           <div
             key={i}
@@ -76,19 +75,19 @@ const Landing = () => {
           </div>
         ))}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
-          <img src={gymLogo} alt="Goldie's Gym" className="h-24 w-auto mb-6 drop-shadow-2xl" />
-          <h1 className="font-display text-5xl md:text-7xl font-bold text-primary mb-3 tracking-tight drop-shadow-lg">
+          <img src={gymLogo} alt="Goldie's Gym" className="h-16 sm:h-24 w-auto mb-4 sm:mb-6 drop-shadow-2xl" />
+          <h1 className="font-display text-3xl sm:text-5xl md:text-7xl font-bold text-primary mb-2 sm:mb-3 tracking-tight drop-shadow-lg">
             GOLDIE'S GYM
           </h1>
-          <p className="font-display text-2xl md:text-3xl text-foreground mb-2 tracking-wide">
+          <p className="font-display text-lg sm:text-2xl md:text-3xl text-foreground mb-1 sm:mb-2 tracking-wide">
             {slides[current].title}
           </p>
-          <p className="text-lg text-muted-foreground max-w-xl mb-8">
+          <p className="text-sm sm:text-lg text-muted-foreground max-w-xl mb-4 sm:mb-8">
             {slides[current].subtitle}
           </p>
-          <div className="flex gap-4">
-            <Button size="lg" className="text-lg px-8" asChild><Link to="/register">Start Your Journey</Link></Button>
-            <Button size="lg" variant="outline" className="text-lg px-8" asChild><Link to="/login">Sign In</Link></Button>
+          <div className="flex gap-3 sm:gap-4">
+            <Button size="default" className="text-sm sm:text-lg sm:px-8" asChild><Link to="/register">Start Your Journey</Link></Button>
+            <Button size="default" variant="outline" className="text-sm sm:text-lg sm:px-8" asChild><Link to="/login">Sign In</Link></Button>
           </div>
         </div>
         {/* Carousel dots */}

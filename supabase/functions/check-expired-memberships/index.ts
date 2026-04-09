@@ -59,7 +59,118 @@ Deno.serve(async (req) => {
 
     if (notifErr) throw notifErr;
 
-    return new Response(JSON.stringify({ expired: userIds.length }), {
+    // Send push notifications for expiry
+    const fcmKeyJson = Deno.env.get("FCM_SERVICE_ACCOUNT_KEY");
+    if (fcmKeyJson) {
+      try {
+        const serviceAccount = JSON.parse(fcmKeyJson);
+        const accessToken = await getAccessToken(serviceAccount);
+
+        const { data: tokens } = await adminClient
+          .from("push_tokens")
+          .select("token, user_id")
+          .in("user_id", userIds);
+
+        if (tokens?.length) {
+          await Promise.allSettled(
+            tokens.map(async (t: any) => {
+              await fetch(
+                `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    message: {
+                      token: t.token,
+                      notification: {
+                        title: "Membership Expired",
+                        body: "Your membership has expired. Please renew your plan to continue.",
+                      },
+                      android: {
+                        priority: "high",
+                        notification: { sound: "default", channel_id: "default" },
+                      },
+                    },
+                  }),
+                }
+              );
+            })
+          );
+        }
+      } catch (pushErr) {
+        console.error("Push notification error:", pushErr);
+      }
+    }
+
+    // Check for members whose membership expires in 3 days (reminder)
+    const threeDaysLater = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
+    const { data: expiringMembers } = await adminClient
+      .from("member_profiles")
+      .select("user_id")
+      .eq("membership_status", "active")
+      .not("membership_end", "is", null)
+      .eq("membership_end", threeDaysLater);
+
+    if (expiringMembers?.length) {
+      const expiringIds = expiringMembers.map((m: any) => m.user_id);
+      const reminderNotifs = expiringIds.map((uid: string) => ({
+        user_id: uid,
+        title: "Membership Expiring Soon",
+        message: "Your membership expires in 3 days. Renew now to avoid interruption.",
+        type: "warning",
+        is_read: false,
+      }));
+      await adminClient.from("notifications").insert(reminderNotifs);
+
+      // Push for expiring soon
+      if (fcmKeyJson) {
+        try {
+          const serviceAccount = JSON.parse(fcmKeyJson);
+          const accessToken = await getAccessToken(serviceAccount);
+          const { data: tokens } = await adminClient
+            .from("push_tokens")
+            .select("token")
+            .in("user_id", expiringIds);
+
+          if (tokens?.length) {
+            await Promise.allSettled(
+              tokens.map(async (t: any) => {
+                await fetch(
+                  `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      message: {
+                        token: t.token,
+                        notification: {
+                          title: "Membership Expiring Soon",
+                          body: "Your membership expires in 3 days. Renew now!",
+                        },
+                        android: {
+                          priority: "high",
+                          notification: { sound: "default", channel_id: "default" },
+                        },
+                      },
+                    }),
+                  }
+                );
+              })
+            );
+          }
+        } catch (pushErr) {
+          console.error("Expiry reminder push error:", pushErr);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ expired: userIds.length, expiring_soon: expiringMembers?.length || 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
