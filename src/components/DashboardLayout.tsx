@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard, Users, Dumbbell, CreditCard, CalendarCheck,
-  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History, ShieldCheck
+  Trophy, MessageSquare, Bell, BarChart3, Settings, LogOut, Menu, X, History, ShieldCheck, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,11 +47,25 @@ const memberLinks = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, signOut, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [installPrompt, setInstallPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsStandalone(window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true);
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   const links = role === "admin" ? adminLinks : role === "trainer" ? trainerLinks : memberLinks;
 
@@ -119,7 +133,21 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
-          <span className="text-sm text-muted-foreground">{user?.email}</span>
+          {!isStandalone && installPrompt && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="lg:hidden"
+              onClick={async () => {
+                await installPrompt.prompt();
+                const { outcome } = await installPrompt.userChoice;
+                if (outcome === "accepted") setInstallPrompt(null);
+              }}
+            >
+              <Download className="h-4 w-4 mr-1" /> Install
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {children}

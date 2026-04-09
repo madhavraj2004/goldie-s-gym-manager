@@ -222,6 +222,15 @@ function AdminPayments() {
       });
       const { error } = await supabase.from("notifications").insert(notifications);
       if (error) throw error;
+
+      // Send push notifications to all users with pending dues (fire-and-forget)
+      supabase.functions.invoke("send-push-notification", {
+        body: {
+          user_ids: uniqueUsers,
+          title: "Payment Due Reminder",
+          body: "You have a pending payment. Please clear your dues at the earliest.",
+        },
+      }).catch((e) => console.warn("Push send failed:", e));
     },
     onSuccess: () => { toast.success(`Due reminders sent to members!`); setShowDue(false); },
     onError: (e: Error) => toast.error(e.message),
