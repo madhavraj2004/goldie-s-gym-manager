@@ -180,12 +180,23 @@ const Messages = () => {
   const sendMessage = useMutation({
     mutationFn: async () => {
       if (!user?.id || !selectedContact?.user_id || !messageText.trim()) return;
+      const content = messageText.trim();
       const { error } = await supabase.from("messages").insert({
         sender_id: user.id,
         receiver_id: selectedContact.user_id,
-        content: messageText.trim(),
+        content,
       });
       if (error) throw error;
+
+      // Send push notification to receiver (fire-and-forget)
+      const senderName = user.user_metadata?.full_name || user.email || "Someone";
+      supabase.functions.invoke("send-push-notification", {
+        body: {
+          user_ids: [selectedContact.user_id],
+          title: `New message from ${senderName}`,
+          body: content.length > 100 ? content.slice(0, 100) + "…" : content,
+        },
+      }).catch((e) => console.warn("Push send failed:", e));
     },
     onSuccess: () => {
       setMessageText("");
